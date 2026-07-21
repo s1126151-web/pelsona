@@ -1,1 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>スキャンしてはじめる - 彼という人</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root{
+    --line: #dddddd;
+    --ink: #111111;
+    --ink-soft: #666666;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Noto Sans JP', 'Hiragino Sans', sans-serif;
+    background:#ffffff;
+    color:var(--ink);
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .card{
+    width:100%;
+    max-width:420px;
+    text-align:center;
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:32px 24px;
+  }
+  h1{
+    font-size:17px;
+    font-weight:700;
+    margin:0 0 6px;
+  }
+  p{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0 0 20px;
+    line-height:1.7;
+  }
+  #qrcode{
+    display:flex;
+    justify-content:center;
+    margin-bottom:18px;
+  }
+  #qrcode img, #qrcode canvas{
+    border:8px solid #ffffff;
+    box-shadow:0 0 0 1px var(--line);
+    border-radius:6px;
+  }
+  .url-text{
+    font-size:13px;
+    color:var(--ink-soft);
+    word-break:break-all;
+    padding:8px 10px;
+    background:#fafafa;
+    border:1px solid var(--line);
+    border-radius:6px;
+  }
+  .warning{
+    font-size:13px;
+    color:var(--ink);
+    line-height:1.8;
+    text-align:left;
+    background:#fafafa;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:14px 16px;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>スマホでスキャンしてはじめる</h1>
+    <p id="introText">同じWi-Fi（同じネットワーク）に接続したスマートフォンのカメラで、<br>下のQRコードを読み取ってください。</p>
+    <div id="qrcode"></div>
+    <div class="url-text" id="urlText"></div>
+    <div class="warning" id="warningBox" style="display:none;"></div>
+  </div>
+
+<script>
+  const isFileProtocol = window.location.protocol === 'file:' || window.location.origin === 'null';
+
+  function showWarning(message){
+    const box = document.getElementById('warningBox');
+    box.style.display = 'block';
+    box.textContent = message;
+    document.getElementById('introText').style.display = 'none';
+  }
+
+  if (isFileProtocol) {
+    // ファイルを直接ダブルクリックして開いた場合、ここに来る
+    showWarning(
+      'このページはファイルを直接開いた状態になっています。' +
+      'サーバーを起動した状態で、ターミナルに表示されたURL' +
+      '（http://から始まるアドレス）をブラウザで開き直してください。'
+    );
+  } else {
+    const playUrl = window.location.origin + '/';
+    document.getElementById('urlText').textContent = playUrl;
+
+    if (typeof QRCode === 'undefined') {
+      // QRコード生成ライブラリが読み込めなかった場合の代替表示
+      document.getElementById('qrcode').textContent = '（QRコードの読み込みに失敗しました。下のURLを直接入力してください）';
+    } else {
+      try {
+        new QRCode(document.getElementById('qrcode'), {
+          text: playUrl,
+          width: 220,
+          height: 220,
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } catch (e) {
+        console.error(e);
+        document.getElementById('qrcode').textContent = '（QRコードの生成に失敗しました。下のURLを直接入力してください）';
+      }
+    }
+  }
+</script>
+</body>
+</html>
 
