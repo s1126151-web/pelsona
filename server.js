@@ -263,9 +263,9 @@ function extractFieldsByRegex(text) {
 function stripJsonArtifacts(text) {
   if (typeof text !== 'string') return text;
   return text
-    // "choices" という単語が出てきたら、それ以降は全部切り捨てる
-    // （配列表記 [...] でも、日本語のカギ括弧の並びでも、両方に対応）
-    .replace(/\s*"?choices"?\s*[:：][\s\S]*$/i, '')
+    // "choice"/"choices" という単語が出てきたら、それ以降は全部切り捨てる
+    // （配列表記 [...] でも、日本語のカギ括弧の並びでも、単数形でも対応）
+    .replace(/\s*"?choices?"?\s*[:：][\s\S]*$/i, '')
     .replace(/\s*"?scene ?complete"?\s*[:：][\s\S]*$/i, '')
     .replace(/\s*"?topics ?expressed"?\s*[:：][\s\S]*$/i, '')
     .trim();
@@ -342,7 +342,7 @@ function sanitizeChoices(choices) {
 // 配列表記("choices": ["a","b","c"])でも、カギ括弧の並び(choices: 「a」「b」「c」)でも
 // 対応する。
 function salvageChoices(rawText) {
-  const arrayMatch = rawText.match(/"?choices"?\s*[:：]\s*\[([^\]]*)\]/i);
+  const arrayMatch = rawText.match(/"?choices?"?\s*[:：]\s*\[([^\]]*)\]/i);
   if (arrayMatch) {
     const items = arrayMatch[1].match(/"([^"]*)"/g);
     if (items && items.length > 0) {
@@ -350,7 +350,7 @@ function salvageChoices(rawText) {
     }
   }
 
-  const afterChoices = rawText.match(/choices\s*[:：]\s*([\s\S]*)$/i);
+  const afterChoices = rawText.match(/choices?\s*[:：]\s*([\s\S]*)$/i);
   if (afterChoices) {
     const kagiItems = afterChoices[1].match(/「([^」]*)」/g);
     if (kagiItems && kagiItems.length > 0) {
