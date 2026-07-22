@@ -245,11 +245,11 @@
     <!-- タイトル画面 -->
     <div class="screen" id="screenTitle">
       <div class="center-screen">
-        <div class="work-title">彼という人（仮題）</div>
+        <div class="work-title">彼という人</div>
         <div class="work-intro">
-          これは、一人の男を、異なる時代・異なる立場から見つめる物語です。<br>
-          あなたが彼を変えられるかどうかを競う話ではありません。<br>
-          変えようとすること、変わるもの、変わらないものを、静かに見届けてください。
+          あなたはこれから、異なる時代、異なる立場から彼との対話を試みます。<br>
+          その中であなたは、与えられた状況を飲み込みながら自分なりのコミュニケーションを取ります。<br>
+          その中で彼にどんな変化があったのか、はたまたなかったのかなどを考えながら臨むと面白いかもしれません。
         </div>
         <button class="primary-btn" id="startBtn" type="button">はじめる</button>
       </div>
@@ -320,7 +320,7 @@
       eyebrow: '第一部',
       title: '学生だった過去',
       age: '18歳',
-      contextText: 'あなたは、彼の父親です。彼はもともと学校で成績優秀な生徒でしたが、進路の話が重なるにつれて、勉強から距離を置くようになりました。今日、彼が持ち帰ったのは、真っ赤な点数の並んだ答案でした。',
+      contextText: 'あなたは、彼の父親です。彼はもともと学校で成績優秀な生徒でしたが、進路の話が重なるにつれて、勉強から距離を置くようになりました。今日、彼が持ち帰ったのは、真っ赤な点数の並んだ答案でした。親として、将来のために、もっと勉強してほしいと思っています。',
       intro: [
         { text: '玄関先で、彼は鞄から丸めた答案用紙を取り出した。広げると、以前とは見違えるほど低い点数が並んでいる。' },
         { text: '「……あー、まあ、うん。」', quote: true },
@@ -367,7 +367,7 @@
   ];
 
   const EPILOGUE_TEXT =
-    '彼は変わった。けれど、変わらなかった。\nその両方が、たしかに彼だった。';
+    '彼は、若い頃からどう変わっていったのだろうか。それとも、何も変わらなかったのだろうか。\nあなたは、彼と話してみて、何を感じただろうか。\n彼は変わった。けれど、変わらなかった。\nその両方が、たしかに彼だった。';
 
   function escapeHtml(str){
     return str
@@ -442,6 +442,11 @@
   // 第一部でユーザー(親役)が実際に言った言葉。第三部の現在地テンプレートへ参考として渡す。
   // タイトルへ戻ったらリセットする。
   let part1UserLines = [];
+
+  // 各部で実際に表示された内容(地の文・台詞)のスナップショット。
+  // ナビの「第一部/第二部/第三部」から、実際に会話した記録をたどれるようにするためのもの。
+  // 何も会話が進んでいない部は null のままで、その場合はナビから通常通り最初から始まる。
+  const partTranscripts = { young: null, slides: null, present: null };
 
   const active = { editableEl: null, hintEl: null, lineWrapperEl: null };
 
@@ -653,6 +658,9 @@
       await typeInto(quote, `「${data.dialogue}」`, 26);
       document.getElementById('storyPanel').scrollTop = document.getElementById('storyPanel').scrollHeight;
 
+      // ここまでの内容を、あとで振り返れるようにスナップショットしておく
+      partTranscripts[chatState.mode] = document.getElementById('storyPanel').innerHTML;
+
       if (data.sceneComplete) {
         finishChatPart();
         return;
@@ -694,6 +702,7 @@
     }
 
     await sleep(3000);
+    partTranscripts.slides = panel.innerHTML;
     onComplete();
   }
 
@@ -702,7 +711,30 @@
   // ------------------------------------------------------------
   function goTitle(){
     part1UserLines = [];
+    partTranscripts.young = null;
+    partTranscripts.slides = null;
+    partTranscripts.present = null;
     transitionTo('title', null, 300);
+  }
+
+  // すでに会話が進んでいる部を、読み取り専用で振り返り表示する
+  function showTranscript(key){
+    transitionTo('chat', () => {
+      const config = key === 'young' ? CHAT_CONFIG.young
+        : key === 'present' ? CHAT_CONFIG.present
+        : null;
+      document.getElementById('chapterEyebrow').textContent = config ? config.eyebrow : '第二部';
+      document.getElementById('chapterTitle').textContent = config ? config.title : '彼が彼らしく生きた時間';
+      document.getElementById('hisAgeLine').innerHTML = config ? `彼の年齢：<b>${escapeHtml(config.age)}</b>` : '';
+      document.getElementById('storyPanel').innerHTML = partTranscripts[key];
+      renderChipRow([]);
+      setStatus('（ここまでの記録を振り返っています。新しく話しかけることはできません）', false);
+      chatState.mode = key;
+      chatState.ended = true;
+      active.editableEl = null;
+      active.hintEl = null;
+      active.lineWrapperEl = null;
+    }, 550);
   }
 
   function goPart1(){
@@ -750,15 +782,52 @@
   document.getElementById('startBtn').addEventListener('click', goPart1);
   document.getElementById('restartBtn').addEventListener('click', goTitle);
 
-  // 巻き戻しナビ：いつでも直接、指定の部へジャンプできる
+  // 巻き戻しナビ：会話済みの記録があればそれを振り返り、無ければ最初から始まる
   document.getElementById('navPart1').addEventListener('click', () => {
-    part1UserLines = [];
-    goPart1();
+    if (partTranscripts.young) {
+      showTranscript('young');
+    } else {
+      part1UserLines = [];
+      goPart1();
+    }
   });
-  document.getElementById('navPart2').addEventListener('click', goPart2);
-  document.getElementById('navPart3').addEventListener('click', goPart3);
+  document.getElementById('navPart2').addEventListener('click', () => {
+    if (partTranscripts.slides) {
+      showTranscript('slides');
+    } else {
+      goPart2();
+    }
+  });
+  document.getElementById('navPart3').addEventListener('click', () => {
+    if (partTranscripts.present) {
+      showTranscript('present');
+    } else {
+      goPart3();
+    }
+  });
 
   showScreenImmediate('title');
+
+  // ------------------------------------------------------------
+  // 2分間操作がなければ、自動的にタイトルへ戻る
+  // ------------------------------------------------------------
+  const INACTIVITY_LIMIT_MS = 2 * 60 * 1000;
+  let inactivityTimer = null;
+
+  function resetInactivityTimer(){
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(() => {
+      const titleScreen = document.getElementById('screenTitle');
+      if (!titleScreen.classList.contains('active')) {
+        goTitle();
+      }
+    }, INACTIVITY_LIMIT_MS);
+  }
+
+  ['click', 'keydown', 'input', 'touchstart'].forEach((evt) => {
+    document.addEventListener(evt, resetInactivityTimer, { passive: true });
+  });
+  resetInactivityTimer();
 </script>
 </body>
 </html>
